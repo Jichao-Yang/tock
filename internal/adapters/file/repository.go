@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-faster/errors"
@@ -120,8 +121,12 @@ func (r *repository) Save(_ context.Context, activity models.Activity) error {
 	// Ideally we should read all lines, identify if we are updating the last line or appending.
 
 	lines, err := r.readLines()
-	if err != nil && !os.IsNotExist(err) {
-		return errors.Wrap(err, "read lines")
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return errors.Wrap(err, "read lines")
+		}
+		// File doesn't exist, will be created on write
+		lines = []string{}
 	}
 
 	// Check if we are updating the last activity (e.g. stopping it)
@@ -159,6 +164,9 @@ func (r *repository) Save(_ context.Context, activity models.Activity) error {
 func (r *repository) readLines() ([]string, error) {
 	f, err := os.Open(r.filePath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, err
+		}
 		return nil, errors.Wrap(err, "open file")
 	}
 	defer f.Close()
@@ -175,6 +183,12 @@ func (r *repository) readLines() ([]string, error) {
 }
 
 func (r *repository) writeLines(lines []string) error {
+	// Ensure directory exists
+	dir := filepath.Dir(r.filePath)
+	if dirErr := os.MkdirAll(dir, 0755); dirErr != nil {
+		return errors.Wrap(dirErr, "create directory")
+	}
+
 	f, err := os.Create(r.filePath)
 	if err != nil {
 		return errors.Wrap(err, "create file")

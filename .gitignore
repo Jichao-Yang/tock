@@ -5,4 +5,5 @@ demo_activities.txt
 .vscode/
 vendor/
 bin/
+.dev/
 .DS_Store
