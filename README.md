@@ -133,6 +133,23 @@ tock stop -t 17:00  # Stop at specific time
 
 - `-t, --time`: End time in HH:MM format (optional, defaults to now)
 
+### Add past activity
+
+Add a completed activity manually. Useful for logging time retroactively.
+
+```bash
+tock add -p "Project" -d "Task" -s 10:00 -e 11:00
+tock add -p "Project" -d "Task" -s 14:00 --duration 1h30m
+```
+
+**Flags:**
+
+- `-d, --description`: Activity description (required)
+- `-p, --project`: Project name (required)
+- `-s, --start`: Start time (HH:MM or YYYY-MM-DD HH:MM)
+- `-e, --end`: End time (HH:MM or YYYY-MM-DD HH:MM)
+- `--duration`: Duration (e.g. 1h, 30m). Used if end time is not specified.
+
 ### Continue activity
 
 Continue a previously tracked activity. Useful for resuming work on a recent task.

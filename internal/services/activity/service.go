@@ -81,6 +81,20 @@ func (s *service) Stop(ctx context.Context, req dto.StopActivityRequest) (*model
 	return last, nil
 }
 
+func (s *service) Add(ctx context.Context, req dto.AddActivityRequest) (*models.Activity, error) {
+	newActivity := models.Activity{
+		Description: req.Description,
+		Project:     req.Project,
+		StartTime:   req.StartTime,
+		EndTime:     &req.EndTime,
+	}
+
+	if saveErr := s.repo.Save(ctx, newActivity); saveErr != nil {
+		return nil, errors.Wrap(saveErr, "save activity")
+	}
+	return &newActivity, nil
+}
+
 func (s *service) List(ctx context.Context, filter dto.ActivityFilter) ([]models.Activity, error) {
 	return s.repo.Find(ctx, filter)
 }

@@ -16,6 +16,13 @@ type StopActivityRequest struct {
 	EndTime time.Time
 }
 
+type AddActivityRequest struct {
+	Description string
+	Project     string
+	StartTime   time.Time
+	EndTime     time.Time
+}
+
 type ActivityFilter struct {
 	FromDate  *time.Time
 	ToDate    *time.Time

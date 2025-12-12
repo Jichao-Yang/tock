@@ -10,6 +10,7 @@ import (
 type ActivityResolver interface {
 	Start(ctx context.Context, req dto.StartActivityRequest) (*models.Activity, error)
 	Stop(ctx context.Context, req dto.StopActivityRequest) (*models.Activity, error)
+	Add(ctx context.Context, req dto.AddActivityRequest) (*models.Activity, error)
 	List(ctx context.Context, filter dto.ActivityFilter) ([]models.Activity, error)
 	GetReport(ctx context.Context, filter dto.ActivityFilter) (*dto.Report, error)
 	GetRecent(ctx context.Context, limit int) ([]models.Activity, error)
