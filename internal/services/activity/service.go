@@ -73,6 +73,10 @@ func (s *service) Stop(ctx context.Context, req dto.StopActivityRequest) (*model
 		endTime = time.Now()
 	}
 
+	if endTime.Before(last.StartTime) {
+		return nil, errors.New("end time cannot be before start time")
+	}
+
 	last.EndTime = &endTime
 	if saveErr := s.repo.Save(ctx, *last); saveErr != nil {
 		return nil, errors.Wrap(saveErr, "save activity")
