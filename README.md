@@ -97,6 +97,54 @@ Or use flags:
 tock --backend timewarrior list
 ```
 
+#### Theming
+
+Tock supports customizable color themes for the calendar view.
+
+**Environment Variables**
+
+Set `TOCK_THEME` to one of:
+
+- `dark`: Standard 256-color dark theme
+- `light`: Standard 256-color light theme
+- `ansi_dark`: 16-color dark theme
+- `ansi_light`: 16-color light theme
+- `custom`: Use custom colors defined by environment variables
+
+**Auto-detection**
+
+If `TOCK_THEME` is not set, Tock automatically selects the best theme:
+
+1. Detects terminal capabilities (TrueColor/256 vs ANSI).
+2. Detects background color (Light vs Dark).
+3. Selects the appropriate theme (e.g. `light` for light background, `ansi_dark` for dark ANSI terminal).
+
+**Custom Colors**
+
+When `TOCK_THEME=custom`, you can override specific colors using these variables (accepts ANSI color codes or hex values):
+
+```bash
+export TOCK_THEME="custom"
+export TOCK_COLOR_PRIMARY="63"   # Blue
+export TOCK_COLOR_SECONDARY="196" # Red
+export TOCK_COLOR_TEXT="255"     # White
+export TOCK_COLOR_SUBTEXT="248"  # Light Grey
+export TOCK_COLOR_FAINT="240"    # Dark Grey
+export TOCK_COLOR_HIGHLIGHT="214" # Orange/Gold
+```
+
+**Example: Cyberpunk / Fuchsia Theme**
+
+```bash
+export TOCK_THEME="custom"
+export TOCK_COLOR_PRIMARY="#FF00FF"   # Fuchsia
+export TOCK_COLOR_SECONDARY="#00FFFF" # Cyan
+export TOCK_COLOR_TEXT="#FFFFFF"      # White
+export TOCK_COLOR_SUBTEXT="#B0B0B0"   # Light Grey
+export TOCK_COLOR_FAINT="#404040"     # Dark Grey
+export TOCK_COLOR_HIGHLIGHT="#FFFF00" # Yellow
+```
+
 #### Shell Completion
 
 To enable shell completion (e.g. for Oh My Zsh):

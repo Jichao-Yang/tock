@@ -27,13 +27,13 @@ func (m *reportModel) renderSidebar() string {
 		b.WriteString(m.renderTopProjects(remaining))
 	}
 
-	return styleSidebar.Render(b.String())
+	return m.styles.Sidebar.Render(b.String())
 }
 
 func (m *reportModel) renderProductivityStats() string {
 	var b strings.Builder
 
-	b.WriteString(styleHeader.Width(40).Render("Productivity") + "\n\n")
+	b.WriteString(m.styles.Header.Width(40).Render("Productivity") + "\n\n")
 
 	var totalDuration time.Duration
 	activeDays := 0
@@ -72,9 +72,9 @@ func (m *reportModel) renderProductivityStats() string {
 		avgDuration = totalDuration / time.Duration(activeDays)
 	}
 
-	b.WriteString(fmt.Sprintf("Total:   %s\n", styleDuration.Render(totalDuration.Round(time.Minute).String())))
-	b.WriteString(fmt.Sprintf("Avg/Day: %s\n", styleDuration.Render(avgDuration.Round(time.Minute).String())))
-	b.WriteString(fmt.Sprintf("Max/Day: %s\n", styleDuration.Render(maxDailyDuration.Round(time.Minute).String())))
+	b.WriteString(fmt.Sprintf("Total:   %s\n", m.styles.Duration.Render(totalDuration.Round(time.Minute).String())))
+	b.WriteString(fmt.Sprintf("Avg/Day: %s\n", m.styles.Duration.Render(avgDuration.Round(time.Minute).String())))
+	b.WriteString(fmt.Sprintf("Max/Day: %s\n", m.styles.Duration.Render(maxDailyDuration.Round(time.Minute).String())))
 	b.WriteString(fmt.Sprintf("Streak:  %d days\n\n", longestStreak))
 	return b.String()
 }
@@ -82,7 +82,7 @@ func (m *reportModel) renderProductivityStats() string {
 func (m *reportModel) renderWeeklyActivity() string {
 	var b strings.Builder
 
-	b.WriteString(styleHeader.Width(40).Render("Weekly Activity") + "\n\n")
+	b.WriteString(m.styles.Header.Width(40).Render("Weekly Activity") + "\n\n")
 
 	weekday := int(m.currentDate.Weekday())
 	if weekday == 0 {
@@ -132,9 +132,9 @@ func (m *reportModel) renderWeeklyActivity() string {
 
 		// Highlight current day
 		day := startOfWeek.AddDate(0, 0, i)
-		dayStyle := lipgloss.NewStyle().Foreground(colorSub)
+		dayStyle := lipgloss.NewStyle().Foreground(m.theme.SubText)
 		if day.Day() == m.currentDate.Day() && day.Month() == m.currentDate.Month() {
-			dayStyle = dayStyle.Foreground(colorDot).Bold(true)
+			dayStyle = dayStyle.Foreground(m.styles.Dot.GetForeground()).Bold(true)
 		}
 
 		bar := ""
@@ -155,8 +155,8 @@ func (m *reportModel) renderWeeklyActivity() string {
 			}
 		}
 
-		b.WriteString(fmt.Sprintf("%s %s\n", dayStyle.Width(2).Render(label), lipgloss.NewStyle().Foreground(colorBlue).Render(bar)))
-		b.WriteString(fmt.Sprintf("   %s\n", lipgloss.NewStyle().Foreground(colorGrey).Render(prevBar)))
+		b.WriteString(fmt.Sprintf("%s %s\n", dayStyle.Width(2).Render(label), lipgloss.NewStyle().Foreground(m.theme.Primary).Render(bar)))
+		b.WriteString(fmt.Sprintf("   %s\n", lipgloss.NewStyle().Foreground(m.theme.Faint).Render(prevBar)))
 	}
 	b.WriteString("\n")
 	return b.String()
@@ -166,7 +166,7 @@ func (m *reportModel) renderTopProjects(maxHeight int) string {
 	var b strings.Builder
 
 	// Top Projects
-	b.WriteString(styleHeader.Width(40).Render("Top Projects") + "\n")
+	b.WriteString(m.styles.Header.Width(40).Render("Top Projects") + "\n")
 
 	projectDurations := make(map[string]time.Duration)
 	for _, r := range m.monthReports {
@@ -209,10 +209,10 @@ func (m *reportModel) renderTopProjects(maxHeight int) string {
 			}
 		}
 
-		b.WriteString(fmt.Sprintf("%s\n", styleProject.Render(kv.Key)))
+		b.WriteString(fmt.Sprintf("%s\n", m.styles.Project.Render(kv.Key)))
 		b.WriteString(fmt.Sprintf("%s %s\n",
-			lipgloss.NewStyle().Foreground(colorBlue).Render(bar),
-			styleDuration.Render(kv.Value.Round(time.Minute).String())))
+			lipgloss.NewStyle().Foreground(m.theme.Primary).Render(bar),
+			m.styles.Duration.Render(kv.Value.Round(time.Minute).String())))
 		b.WriteString("\n")
 	}
 	return b.String()

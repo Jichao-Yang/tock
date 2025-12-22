@@ -47,15 +47,20 @@ type reportModel struct {
 	width        int
 	height       int
 	err          error
+	styles       Styles
+	theme        Theme
 }
 
 func initialReportModel(service ports.ActivityResolver) reportModel {
 	now := time.Now()
+	theme := GetTheme()
 	return reportModel{
 		service:      service,
 		currentDate:  now,
 		viewDate:     now,
 		monthReports: make(map[int]*dto.Report),
+		styles:       InitStyles(theme),
+		theme:        theme,
 	}
 }
 
@@ -136,85 +141,18 @@ func (m *reportModel) View() string {
 	return detailsView
 }
 
-// Styles.
-var (
-	colorRed   = lipgloss.Color("196")
-	colorBlue  = lipgloss.Color("63")
-	colorGrey  = lipgloss.Color("240")
-	colorLight = lipgloss.Color("255")
-	colorSub   = lipgloss.Color("248")
-	colorDot   = lipgloss.Color("214")
-
-	styleWrapper = lipgloss.NewStyle().
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(colorGrey).
-			Padding(0, 1).
-			MarginRight(1)
-
-	styleHeader = lipgloss.NewStyle().
-			Foreground(colorLight).
-			Bold(true).
-			Align(lipgloss.Center).
-			Width(28)
-
-	styleWeekday = lipgloss.NewStyle().
-			Foreground(colorSub).
-			Width(4).
-			Align(lipgloss.Center)
-
-	styleDay = lipgloss.NewStyle().
-			Width(4).
-			Align(lipgloss.Center)
-
-	styleToday = styleDay.
-			Foreground(lipgloss.Color("255")).
-			Background(colorRed).
-			Bold(true)
-
-	styleSelected = styleDay.
-			Foreground(lipgloss.Color("255")).
-			Background(colorBlue)
-
-	styleDetailsHeader = lipgloss.NewStyle().
-				Foreground(colorLight).
-				Bold(true).
-				Border(lipgloss.NormalBorder(), false, false, true, false).
-				BorderForeground(colorGrey).
-				Width(100)
-
-	styleTime = lipgloss.NewStyle().
-			Foreground(colorSub).
-			Width(12)
-
-	styleProject = lipgloss.NewStyle().
-			Foreground(colorBlue).
-			Bold(true)
-
-	styleDesc = lipgloss.NewStyle().
-			Foreground(colorLight)
-
-	styleDuration = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("214")) // Orange/Gold
-
-	styleSidebar = lipgloss.NewStyle().
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(colorGrey).
-			Padding(0, 1).
-			Width(40)
-)
-
 func (m *reportModel) renderCalendar() string {
 	var b strings.Builder
 	now := time.Now()
 
 	// Month Header
 	header := fmt.Sprintf("%s %d", m.viewDate.Month(), m.viewDate.Year())
-	b.WriteString(styleHeader.Render(header) + "\n\n")
+	b.WriteString(m.styles.Header.Render(header) + "\n\n")
 
 	// Weekday headers
 	weekdays := []string{"Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"}
 	for _, w := range weekdays {
-		b.WriteString(styleWeekday.Render(w))
+		b.WriteString(m.styles.Weekday.Render(w))
 	}
 	b.WriteString("\n")
 
@@ -247,15 +185,15 @@ func (m *reportModel) renderCalendar() string {
 
 		switch {
 		case isToday:
-			cellStyle = styleToday
+			cellStyle = m.styles.Today
 		case isSelected:
-			cellStyle = styleSelected
+			cellStyle = m.styles.Selected
 		default:
-			cellStyle = styleDay
+			cellStyle = m.styles.Day
 			if hasActivity {
-				cellStyle = cellStyle.Foreground(colorDot).Bold(true)
+				cellStyle = cellStyle.Foreground(m.styles.Dot.GetForeground()).Bold(true)
 			} else {
-				cellStyle = cellStyle.Foreground(colorSub)
+				cellStyle = cellStyle.Foreground(m.styles.Weekday.GetForeground())
 			}
 		}
 
@@ -274,11 +212,11 @@ func (m *reportModel) renderCalendar() string {
 	b.WriteString("\n\n")
 	b.WriteString(
 		lipgloss.NewStyle().
-			Foreground(colorSub).
+			Foreground(m.styles.Weekday.GetForeground()).
 			Render("Use arrows to navigate:\n - 'j'/'k' to scroll details\n - 'n'/'p' for next/prev month\n - 'q' to quit"),
 	)
 
-	return styleWrapper.Render(b.String())
+	return m.styles.Wrapper.Render(b.String())
 }
 
 func (m *reportModel) renderDetails() string {
@@ -295,7 +233,7 @@ func (m *reportModel) renderDetails() string {
 
 	return lipgloss.NewStyle().
 		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(colorGrey).
+		BorderForeground(m.theme.Faint).
 		Padding(0, 1).
 		Width(detailsWidth).
 		Height(m.height - 2).
@@ -310,12 +248,12 @@ func (m *reportModel) updateViewportContent() {
 
 	// Header
 	dateStr := m.currentDate.Format("Monday, 02 January 2006")
-	b.WriteString(styleDetailsHeader.Render(dateStr) + "\n\n")
+	b.WriteString(m.styles.DetailsHeader.Render(dateStr) + "\n\n")
 
 	hasEvents := ok && report != nil && report.TotalDuration > 0
 
 	if !hasEvents {
-		b.WriteString(lipgloss.NewStyle().Foreground(colorSub).Render("No events"))
+		b.WriteString(lipgloss.NewStyle().Foreground(m.styles.Weekday.GetForeground()).Render("No events"))
 		m.viewport.SetContent(b.String())
 		return
 	}
@@ -336,8 +274,8 @@ func (m *reportModel) updateViewportContent() {
 		line := "│"
 
 		// Colors
-		dotStyle := lipgloss.NewStyle().Foreground(colorBlue)
-		lineStyle := lipgloss.NewStyle().Foreground(colorGrey)
+		dotStyle := m.styles.Dot
+		lineStyle := m.styles.Line
 
 		// Content
 		durStr := act.Duration().Round(time.Minute).String()
@@ -347,11 +285,11 @@ func (m *reportModel) updateViewportContent() {
 
 		// Row 1: Time | Dot | Project
 		b.WriteString(lipgloss.JoinHorizontal(lipgloss.Top,
-			styleTime.Width(6).Align(lipgloss.Right).Render(start),
+			m.styles.Time.Width(6).Align(lipgloss.Right).Render(start),
 			"  ",
 			dotStyle.Render(dot),
 			"  ",
-			styleProject.Render(act.Project),
+			m.styles.Project.Render(act.Project),
 		) + "\n")
 
 		// Row 2:      | Line | Description
@@ -361,7 +299,7 @@ func (m *reportModel) updateViewportContent() {
 				"  ",
 				lineStyle.Render(line),
 				"  ",
-				styleDesc.Render(act.Description),
+				m.styles.Desc.Render(act.Description),
 			) + "\n")
 		}
 
@@ -371,7 +309,7 @@ func (m *reportModel) updateViewportContent() {
 			"  ",
 			lineStyle.Render(line),
 			"  ",
-			styleDuration.Render(durStr),
+			m.styles.Duration.Render(durStr),
 		) + "\n")
 
 		// Spacer
@@ -387,7 +325,7 @@ func (m *reportModel) updateViewportContent() {
 	}
 
 	totalDur := report.TotalDuration.Round(time.Minute)
-	b.WriteString(lipgloss.NewStyle().Foreground(colorSub).Render(fmt.Sprintf("Total: %s", totalDur)))
+	b.WriteString(lipgloss.NewStyle().Foreground(m.styles.Weekday.GetForeground()).Render(fmt.Sprintf("Total: %s", totalDur)))
 	b.WriteString("\n")
 
 	// Project breakdown
@@ -405,8 +343,8 @@ func (m *reportModel) updateViewportContent() {
 
 	for _, s := range stats {
 		b.WriteString(fmt.Sprintf("- %s: %s\n",
-			styleProject.Render(s.Name),
-			styleDuration.Render(s.Duration.Round(time.Minute).String()),
+			m.styles.Project.Render(s.Name),
+			m.styles.Duration.Render(s.Duration.Round(time.Minute).String()),
 		))
 	}
 
