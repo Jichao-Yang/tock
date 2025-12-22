@@ -294,7 +294,7 @@ tock report --date 2025-12-01
 
 <img src="assets/demo_3.png" width="280px" align="left" style="margin-right: 20px; margin-bottom: 10px;"/> 
 
-Generate a scientific analysis of your work habits, including Deep Work Score, Chronotype estimation, and Context Switching metrics.
+Generate an analysis of your work habits, including Deep Work Score, Chronotype estimation, and Context Switching metrics.
 
 
 **Metrics:**
@@ -304,6 +304,7 @@ Generate a scientific analysis of your work habits, including Deep Work Score, C
 - **Context Switching**: Measures fragmentation of your workday.
 - **Session Distribution**: Breakdown of work sessions by duration.
 
+<br> 
 ```bash
 tock analyze
 tock analyze --days 7
