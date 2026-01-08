@@ -1,5 +1,28 @@
 # Tock - CLI Time Tracking Tool
 
+## ⚠️ Important: Documentation Workflow
+
+**READ THIS FIRST:** This project uses persistent documentation to preserve knowledge across sessions. Your context is temporary—these docs are not.
+
+### Required Documents (in `docs/`)
+
+| Document | Purpose | When to Update |
+|----------|---------|----------------|
+| `docs/task_plan.md` | Track current session goals, break work into atomic tasks, record progress | **Start of session:** Define goal. **During work:** Update task status. **End of session:** Archive completed work. |
+| `docs/notes.md` | Capture research findings, technical discoveries, lessons learned | **Continuously:** Whenever you learn something new about the codebase, find a bug, discover a pattern, or make a mistake worth remembering. |
+
+### Workflow for Every Session
+
+1. **START:** Read `docs/task_plan.md` and `docs/notes.md` to restore context
+2. **PLAN:** Update `task_plan.md` with the current session's goal and task breakdown
+3. **WORK:** As you implement, update task statuses in `task_plan.md`
+4. **LEARN:** When you discover something useful, add it to `notes.md` immediately
+5. **END:** Archive completed session in `task_plan.md`, commit docs with your changes
+
+**Why this matters:** Information in your context window will be forgotten. These documents persist. Write things down as you go, not at the end.
+
+---
+
 ## Overview
 
 Tock is a command-line time tracking tool written in Go, inspired by [Bartib](https://github.com/nikolassv/bartib). It features an interactive TUI for viewing and analyzing tracked time, with a plaintext file format for storage.
@@ -17,6 +40,7 @@ Tock is a command-line time tracking tool written in Go, inspired by [Bartib](ht
 
 ```
 cmd/tock/              # Application entry point
+docs/                  # Development documentation (task_plan.md, notes.md)
 internal/
 ├── config/            # Configuration management (Viper)
 ├── core/              # Domain layer
