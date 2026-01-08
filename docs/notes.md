@@ -71,6 +71,69 @@ From examining the codebase:
 - `tea.KeyMsg` for keyboard handling
 - `lipgloss` for all styling (colors, borders, layout)
 
+### Command Mode Implementation Analysis (2026-01-08)
+
+**Key discovery:** The `ActivityResolver` interface already has all the methods we need:
+- `Start(ctx, dto.StartActivityRequest)` - start new activity
+- `Stop(ctx, dto.StopActivityRequest)` - stop current activity
+- `GetRecent(ctx, limit)` - get recent activities (for `:continue`)
+
+The calendar's `reportModel` already holds a `service ports.ActivityResolver`, so we can directly call these methods without any DI changes.
+
+**Calendar model structure** (`internal/adapters/cli/calendar.go`):
+```go
+type reportModel struct {
+    service      ports.ActivityResolver  // ← Already has Start/Stop!
+    currentDate  time.Time
+    viewDate     time.Time
+    monthReports map[int]*dto.Report
+    viewport     viewport.Model
+    ready        bool
+    width, height int
+    err          error
+    styles       Styles
+    theme        Theme
+}
+```
+
+**Key methods to understand:**
+- `handleKeyMsg()` - handles all keyboard input, add `:` case here
+- `Update()` - main Bubble Tea update loop
+- `View()` - renders the UI, need to add command input at bottom
+- `fetchMonthData()` - returns `tea.Cmd` that fetches data, call after commands
+
+**DTOs needed for commands:**
+```go
+// For :start
+dto.StartActivityRequest{
+    Description: "...",
+    Project:     "...",
+    StartTime:   time.Time{}, // empty = now
+}
+
+// For :stop
+dto.StopActivityRequest{
+    EndTime: time.Time{}, // empty = now
+}
+```
+
+### Bubble Tea Text Input Component
+
+Need to import: `github.com/charmbracelet/bubbles/textinput`
+
+Basic usage:
+```go
+ti := textinput.New()
+ti.Placeholder = "Enter command..."
+ti.Focus()
+
+// In Update():
+ti, cmd = ti.Update(msg)
+
+// In View():
+ti.View()
+```
+
 ---
 
 ## Lessons Learned
