@@ -15,6 +15,7 @@ import (
 	"github.com/kriuchkov/tock/internal/core/models"
 	"github.com/kriuchkov/tock/internal/core/ports"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -51,11 +52,21 @@ type reportModel struct {
 	err          error
 	styles       Styles
 	theme        Theme
+
+	// Command mode (vim-style)
+	commandMode bool
+	textInput   textinput.Model
 }
 
 func initialReportModel(service ports.ActivityResolver, cfg *config.Config) reportModel {
 	now := time.Now()
 	theme := GetTheme(cfg.Theme)
+
+	// Initialize text input for command mode
+	ti := textinput.New()
+	ti.Prompt = ":"
+	ti.CharLimit = 256
+
 	return reportModel{
 		service:      service,
 		currentDate:  now,
@@ -63,6 +74,7 @@ func initialReportModel(service ports.ActivityResolver, cfg *config.Config) repo
 		monthReports: make(map[int]*dto.Report),
 		styles:       InitStyles(theme),
 		theme:        theme,
+		textInput:    ti,
 	}
 }
 
@@ -78,6 +90,28 @@ func (m *reportModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		// Handle command mode input
+		if m.commandMode {
+			switch msg.Type {
+			case tea.KeyEnter:
+				// Execute command and exit command mode
+				cmd = m.executeCommand(m.textInput.Value())
+				m.commandMode = false
+				m.textInput.Reset()
+				return m, cmd
+			case tea.KeyEsc:
+				// Cancel command mode
+				m.commandMode = false
+				m.textInput.Reset()
+				return m, nil
+			default:
+				// Delegate to text input
+				m.textInput, cmd = m.textInput.Update(msg)
+				return m, cmd
+			}
+		}
+
+		// Normal mode key handling
 		var handled bool
 		if cmd, handled = m.handleKeyMsg(msg); handled {
 			return m, cmd
@@ -131,16 +165,25 @@ func (m *reportModel) View() string {
 
 	detailsView := m.renderDetails()
 
+	var mainView string
 	if m.width >= 120 {
 		calendarView := m.renderCalendar()
 		sidebarView := m.renderSidebar()
-		return lipgloss.JoinHorizontal(lipgloss.Top, calendarView, detailsView, sidebarView)
+		mainView = lipgloss.JoinHorizontal(lipgloss.Top, calendarView, detailsView, sidebarView)
 	} else if m.width >= 70 {
 		calendarView := m.renderCalendar()
-		return lipgloss.JoinHorizontal(lipgloss.Top, calendarView, detailsView)
+		mainView = lipgloss.JoinHorizontal(lipgloss.Top, calendarView, detailsView)
+	} else {
+		mainView = detailsView
 	}
 
-	return detailsView
+	// Add command input at the bottom when in command mode
+	if m.commandMode {
+		commandLine := m.textInput.View()
+		return lipgloss.JoinVertical(lipgloss.Left, mainView, commandLine)
+	}
+
+	return mainView
 }
 
 func (m *reportModel) renderCalendar() string {
@@ -215,7 +258,7 @@ func (m *reportModel) renderCalendar() string {
 	b.WriteString(
 		lipgloss.NewStyle().
 			Foreground(m.styles.Weekday.GetForeground()).
-			Render("Use arrows to navigate:\n - 'j'/'k' to scroll details\n - 'n'/'p' for next/prev month\n - 'q' to quit"),
+			Render("Navigation:\n - arrows/hjkl to navigate\n - 'n'/'p' for next/prev month\n - ':' for command mode\n - 'q' to quit"),
 	)
 
 	return m.styles.Wrapper.Render(b.String())
@@ -425,8 +468,13 @@ func (m *reportModel) fetchMonthData() tea.Msg {
 
 func (m *reportModel) handleKeyMsg(msg tea.KeyMsg) (tea.Cmd, bool) {
 	switch msg.String() {
-	case "q", "ctrl+c", "esc":
+	case "q", "ctrl+c":
 		return tea.Quit, true
+	case ":":
+		// Enter command mode
+		m.commandMode = true
+		m.textInput.Focus()
+		return nil, true
 	case "left", "h":
 		m.currentDate = m.currentDate.AddDate(0, 0, -1)
 		if m.currentDate.Month() != m.viewDate.Month() {
@@ -475,4 +523,72 @@ func (m *reportModel) handleKeyMsg(msg tea.KeyMsg) (tea.Cmd, bool) {
 		return m.fetchMonthData, true
 	}
 	return nil, false
+}
+
+// executeCommand parses and executes a vim-style command
+func (m *reportModel) executeCommand(input string) tea.Cmd {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return nil
+	}
+
+	// Parse command and arguments
+	parts := strings.SplitN(input, " ", 3)
+	cmd := parts[0]
+
+	switch cmd {
+	case "q", "quit":
+		return tea.Quit
+
+	case "start":
+		if len(parts) < 2 {
+			return nil // Need at least project name
+		}
+		project := parts[1]
+		description := ""
+		if len(parts) >= 3 {
+			description = parts[2]
+		}
+
+		req := dto.StartActivityRequest{
+			Project:     project,
+			Description: description,
+		}
+		_, err := m.service.Start(context.Background(), req)
+		if err != nil {
+			m.err = err
+			return nil
+		}
+		// Refresh data to show the new activity
+		return m.fetchMonthData
+
+	case "stop":
+		req := dto.StopActivityRequest{}
+		_, err := m.service.Stop(context.Background(), req)
+		if err != nil {
+			m.err = err
+			return nil
+		}
+		return m.fetchMonthData
+
+	case "continue", "cont":
+		// Get the most recent activity and start a new one with the same project/description
+		recent, err := m.service.GetRecent(context.Background(), 1)
+		if err != nil || len(recent) == 0 {
+			return nil
+		}
+		last := recent[0]
+		req := dto.StartActivityRequest{
+			Project:     last.Project,
+			Description: last.Description,
+		}
+		_, err = m.service.Start(context.Background(), req)
+		if err != nil {
+			m.err = err
+			return nil
+		}
+		return m.fetchMonthData
+	}
+
+	return nil
 }

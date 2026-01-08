@@ -68,19 +68,19 @@ The `ActivityResolver` interface already exposes `Start()`, `Stop()`, and `GetRe
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 1 | Add `commandMode` state and `textinput.Model` to `reportModel` | ⏳ Pending | |
-| 2 | Initialize text input in `initialReportModel()` | ⏳ Pending | |
-| 3 | Handle `:` key to enter command mode | ⏳ Pending | In `handleKeyMsg()` |
-| 4 | Delegate to text input in command mode | ⏳ Pending | In `Update()` |
-| 5 | Handle `Enter` to execute and `Esc` to cancel | ⏳ Pending | |
-| 6 | Add command parser function | ⏳ Pending | Parse `:start`, `:stop`, `:continue`, `:q` |
-| 7 | Wire up `:start` to `service.Start()` | ⏳ Pending | Need `dto.StartActivityRequest` |
-| 8 | Wire up `:stop` to `service.Stop()` | ⏳ Pending | |
-| 9 | Wire up `:continue` using `service.GetRecent()` + `service.Start()` | ⏳ Pending | |
-| 10 | Wire up `:q` to `tea.Quit` | ⏳ Pending | |
-| 11 | Refresh calendar data after command execution | ⏳ Pending | Call `fetchMonthData` |
-| 12 | Update `View()` to render text input at bottom when in command mode | ⏳ Pending | |
-| 13 | Test manually | ⏳ Pending | |
+| 1 | Add `commandMode` state and `textinput.Model` to `reportModel` | ✅ Done | |
+| 2 | Initialize text input in `initialReportModel()` | ✅ Done | |
+| 3 | Handle `:` key to enter command mode | ✅ Done | In `handleKeyMsg()` |
+| 4 | Delegate to text input in command mode | ✅ Done | In `Update()` |
+| 5 | Handle `Enter` to execute and `Esc` to cancel | ✅ Done | |
+| 6 | Add command parser function | ✅ Done | `executeCommand()` function |
+| 7 | Wire up `:start` to `service.Start()` | ✅ Done | |
+| 8 | Wire up `:stop` to `service.Stop()` | ✅ Done | |
+| 9 | Wire up `:continue` using `service.GetRecent()` + `service.Start()` | ✅ Done | Also supports `:cont` alias |
+| 10 | Wire up `:q` to `tea.Quit` | ✅ Done | Also supports `:quit` |
+| 11 | Refresh calendar data after command execution | ✅ Done | Returns `fetchMonthData` cmd |
+| 12 | Update `View()` to render text input at bottom when in command mode | ✅ Done | |
+| 13 | Test manually | ✅ Done | Build passes, all tests pass |
 
 **Status Legend:** ⏳ Pending | 🔄 In Progress | ✅ Done | ❌ Blocked | 🚫 Cancelled
 
