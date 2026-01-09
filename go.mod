@@ -1,6 +1,8 @@
 module github.com/kriuchkov/tock
 
-go 1.24.11
+go 1.24.2
+
+toolchain go1.24.7
 
 require (
 	github.com/charmbracelet/bubbles v0.21.0
@@ -14,6 +16,7 @@ require (
 )
 
 require (
+	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/colorprofile v0.3.3 // indirect
 	github.com/charmbracelet/x/ansi v0.11.2 // indirect
